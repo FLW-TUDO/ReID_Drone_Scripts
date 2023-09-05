@@ -1,0 +1,9 @@
+*.pyc
+__pycache__
+
+pyvicon/
+logs/*
+.vscode/
+reid_demo/detections/*
+reid_demo/recordings/*
+reid_demo/aideck/models/
