@@ -2,8 +2,10 @@
 __pycache__
 
 pyvicon/
+pycrazyswarm/
 logs/*
 .vscode/
 reid_demo/detections/*
 reid_demo/recordings/*
+reid_demo/videos/*
 reid_demo/aideck/models/
