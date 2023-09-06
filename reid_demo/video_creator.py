@@ -20,6 +20,9 @@ if __name__ == "__main__":
         images = glob.glob(os.path.join(recording, "*.jpg"))
         images = sorted(images)
 
+        if not len(images) > 0:
+            continue
+
         test_img = cv2.imread(images[0])
 
         if test_img is None:
