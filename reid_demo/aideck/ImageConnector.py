@@ -1,13 +1,14 @@
 import time
 import socket, struct, time
 import numpy as np
+import os
 import cv2
 import threading
 import pyvirtualcam
 
-from . import utils
+from aideck import utils
 
-IP = '192.168.2.127'
+IP = '192.168.2.199'
 PORT = 5000
 DEVICE_NUMBERS = [0, 1]
 WIDTH = 324
@@ -15,6 +16,7 @@ HEIGHT = 244
 FPS = 20
 
 DEBUG = True
+RECORD = False
 
 class Connector(threading.Thread):
 
@@ -22,7 +24,13 @@ class Connector(threading.Thread):
         threading.Thread.__init__(self)
         self.factors = [1.8648577393897736, 1.2606252586922309, 1.4528872589128194]
 
-        self.timer_period = 0.1  # seconds
+        if RECORD:
+            self.recording_folder_name = f"recording_{int(time.time())}"
+            if not os.path.exists(os.path.join("recordings", self.recording_folder_name)):
+                os.mkdir(os.path.join("recordings", self.recording_folder_name))
+        
+
+        self.timer_period = 0.05  # seconds
 
         print("Connecting to socket on {}:{}...".format(IP, PORT))
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,8 +49,13 @@ class Connector(threading.Thread):
 
     def run(self):
         while self.running:
-            self.timer_callback()
-            time.sleep(self.timer_period)
+            try:
+                self.timer_callback()
+                time.sleep(self.timer_period)
+            except:
+                self.client_socket.close()
+        
+        self.client_socket.close()
 
     def timer_callback(self):
         
@@ -92,24 +105,20 @@ class Connector(threading.Thread):
                 bayer_img = np.frombuffer(imgStream, dtype=np.uint8)   
                 bayer_img.shape = (244, 324)
                 color_img = cv2.cvtColor(bayer_img, cv2.COLOR_BayerBG2BGR)
+                # k = cv2.waitKey(1)
+                # if k == ord('b'):
+                #     _,self.factors = utils.colorBalance(color_img)
 
-                k = cv2.waitKey(1)
-                if k == ord('b'):
-                    _,self.factors = utils.colorBalance(color_img)
-                
                 cv2.imshow('Color', utils.colorCorrectBayer(color_img,self.factors))
+                
                 k=cv2.waitKey(1)
                 if k == ord('q'):
                     self.running = False
+                
+                if RECORD:
+                    cv2.imwrite(os.path.join("recordings", self.recording_folder_name, f"{time.time()}.jpg"), utils.colorCorrectBayer(color_img,self.factors))
+                
                 imgs = [bayer_img,color_img]
-            else:
-                nparr = np.frombuffer(imgStream, np.uint8)
-                decoded = cv2.imdecode(nparr,cv2.IMREAD_UNCHANGED)
-                cv2.imshow('JPEG', decoded)
-                k=cv2.waitKey(1)
-                if k == ord('q'):
-                    self.running = False
-                imgs = [decoded]
 
         return format,imgs
 

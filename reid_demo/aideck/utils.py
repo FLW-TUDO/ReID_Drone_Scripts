@@ -137,6 +137,28 @@ def choose_most_left_bb(bounding_boxes):
 
     return best_bb
 
+def choose_middle_bb(pallet_offsets):
+    if pallet_offsets is None:
+        return None
+    
+    offsets = [offset_x for offset_x, _, _, _, _ in pallet_offsets]
+    offsets = sorted(offsets)
+
+    return offsets[len(offsets) // 2]
+
+def choose_closest_bb(pallet_offsets):
+    if pallet_offsets is None:
+        return None
+
+    best_bb, best_bb_score = None, 1000
+    for offset_x, offset_y, area, center_x, center_y in pallet_offsets:
+        score = abs(offset_x)
+        if score < best_bb_score:
+            best_bb = (offset_x, offset_y, area, center_x, center_y)
+            best_bb_score = score
+
+    return best_bb
+
 def safe_create_folder(name):
     if not os.path.exists(name):
         os.mkdir(name)
@@ -151,3 +173,24 @@ def choose_most_left_bb(bounding_boxes):
             best_bb_score = score
 
     return best_bb
+
+def calculate_pallet_offsets(pallet_bb):
+        """
+            # lowerright, upperleft
+            pallet_bb : [x,y,x,y]
+        """
+        upperleft = [pallet_bb[0], pallet_bb[1]]
+        lowerright = [pallet_bb[0] + pallet_bb[2], pallet_bb[1] + pallet_bb[3]]
+
+        width = abs(upperleft[0] - lowerright[0])
+        height = abs(upperleft[1] - lowerright[1])
+
+        area = width * height
+
+        center_x = upperleft[0] + width//2
+        center_y = upperleft[1] + height//2
+
+        offset_x = 324/2 - center_x
+        offset_y = 244/2 - center_y
+
+        return offset_x, offset_y, area, center_x, center_y
