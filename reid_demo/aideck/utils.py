@@ -87,13 +87,13 @@ def draw_crosshair(image, box, length=10, color=[40, 220, 50]):
 
     return image
 
-def detect_box(resized, model, conf, nms):
+def detect_box(resized, model, conf, nms, color=(0, 225, 0)):
     class_names = ['palletblock']
     classes, scores, boxes = model.detect(resized, conf, nms)
     box_results = []
     if len(boxes) > 0:
         for (classid, score, box) in zip(classes, scores, boxes):
-            resized = draw_filled_rect(resized, box, str(round(100*score)))
+            resized = draw_filled_rect(resized, box, str(round(100*score)), rect_color=color)
             resized = draw_crosshair(resized, box)
             box_results.append([*box, score*100])
         # draw chosen bb
@@ -103,14 +103,12 @@ def detect_box(resized, model, conf, nms):
     else:
         return None, resized
     
-def draw_filled_rect(img_original, box, label, alpha=0.05):
-    color = [10, 220, 10]
+def draw_filled_rect(img_original, box, label, rect_color=(0, 225, 0), text_color=[10, 220, 10], alpha=0.05):
     img_rect_filled = img_original.copy()
-    [height,width,_] = img_original.shape
-    cv2.rectangle(img_rect_filled, box , color=(0, 225, 0), thickness=-1)
+    cv2.rectangle(img_rect_filled, box , color=rect_color, thickness=-1)
     img_processed=cv2.addWeighted(img_rect_filled, alpha, img_original, 1 - alpha, 0)
-    img_processed=cv2.rectangle(img_processed, box , color=(0, 225, 0), thickness=3)
-    cv2.putText(img_processed, label + "%", (int(box[0] + box[2]),int(box[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 3)
+    img_processed=cv2.rectangle(img_processed, box , color=rect_color, thickness=3)
+    cv2.putText(img_processed, label + "%", (int(box[0] + box[2]),int(box[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.7, text_color, 3)
     return img_processed
 
 def draw_detection_marker(img_original, box, label):
