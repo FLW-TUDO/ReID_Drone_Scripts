@@ -12,7 +12,7 @@ MIN_HEIGHT = 0.15
 STEP_FLIGHT_TIME = 1.5
 PALLET_OFFSET_TOPIC = "pallet_bb"
 PALLET_BLOCK_OFFSET_TOPIC = "palletBlock_bb"
-PALLET_BLOCK_CONTINUE_TOPIC = PALLET_BLOCK_OFFSET_TOPIC + "_continue"
+PALLET_BLOCK_CONTINUE_TOPIC = "move_to_next_block"
 
 def main():
     client = MQTTClient("localhost", 5000, [PALLET_OFFSET_TOPIC, PALLET_BLOCK_OFFSET_TOPIC, PALLET_BLOCK_CONTINUE_TOPIC])
@@ -82,7 +82,7 @@ def main():
 
                 while client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is None:
                     print("Waiting for image capture...")
-                    timeHelper.sleep(0.5)
+                    timeHelper.sleep(0.1)
 
                 # reset drone search settings
                 drone.reset_target_condition()
