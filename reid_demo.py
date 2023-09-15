@@ -15,7 +15,7 @@ PALLET_BLOCK_OFFSET_TOPIC = "palletBlock_bb"
 PALLET_BLOCK_CONTINUE_TOPIC = "move_to_next_block"
 
 def main():
-    client = MQTTClient("localhost", 5000, [PALLET_OFFSET_TOPIC, PALLET_BLOCK_OFFSET_TOPIC, PALLET_BLOCK_CONTINUE_TOPIC])
+    client = MQTTClient("localhost", 5001, [PALLET_OFFSET_TOPIC, PALLET_BLOCK_OFFSET_TOPIC, PALLET_BLOCK_CONTINUE_TOPIC])
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
@@ -76,25 +76,47 @@ def main():
             
             time = drone.update_block(target_offset)
 
-            if drone.check_target_condition() and pallet_block_offsets is not None:
+            if client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is not None:
                 print("Found block", str(blocks_passed), "moving to next...")
                 blocks_passed += 1
-
-                while client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is None:
-                    print("Waiting for image capture...")
-                    timeHelper.sleep(0.1)
-
                 # reset drone search settings
                 drone.reset_target_condition()
-
                 if blocks_passed >= 3:
                     print("Found all blocks returning to base...")
                     current_mode = Mode.FINISHED
                     running = False
-                    timeHelper.sleep(1)
                 else:
                     movement = [(0.47, 0, 3), (-0.94, -0.2, 5)]
                     time = drone.move_sideways(*movement[blocks_passed-1])
+
+            # if drone.check_target_condition() and pallet_block_offsets is not None:
+                
+
+            #     while client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is None:
+            #         print("Waiting for image capture...")
+            #         pallet_block_offsets = client.get_bb(PALLET_BLOCK_OFFSET_TOPIC)
+            #         # check if object is still detected
+            #         if pallet_block_offsets is None:
+            #             # move back if not
+            #             time = drone.update_block(None)
+            #         else:
+            #             target_offset = choose_closest_bb(pallet_block_offsets)
+            #             time = drone.update_block(target_offset)
+            #         timeHelper.sleep(time)
+
+            #     # reset drone search settings
+            #     drone.reset_target_condition()
+
+            #     if blocks_passed >= 3:
+            #         print("Found all blocks returning to base...")
+            #         current_mode = Mode.FINISHED
+            #         running = False
+            #         timeHelper.sleep(1)
+            #     else:
+            #         movement = [(0.47, 0, 3), (-0.94, -0.2, 5)]
+            #         time = drone.move_sideways(*movement[blocks_passed-1])
+                
+                    
 
 
         elif current_mode == Mode.FINISHED:
