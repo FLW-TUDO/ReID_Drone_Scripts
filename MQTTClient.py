@@ -34,7 +34,6 @@ class MQTTClient(Thread):
 
     def get_bb(self, topic):
         if topic not in self.topic_infos:
-            print(self.topic_infos, self.topics)
             return None
         res = self.topic_infos[topic]
         self.topic_infos[topic] = None
