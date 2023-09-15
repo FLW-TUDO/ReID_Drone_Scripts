@@ -10,7 +10,7 @@ from aideck import utils
 
 IP = '192.168.2.199'
 PORT = 5000
-DEVICE_NUMBERS = [0, 1]
+DEVICE_NUMBERS = [0, 1, 2]
 WIDTH = 324
 HEIGHT = 244
 FPS = 20
