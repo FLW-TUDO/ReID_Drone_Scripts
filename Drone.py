@@ -214,8 +214,8 @@ class Drone():
         if not self.update():
             return None
         if block_offset is None:
-            dist_side, height, dist_front, area = 0, 0, -0.05, 0
-            flight_time = 4
+            dist_side, height, dist_front, area = 0, 0, -0.025, 0
+            flight_time = 2
             self.max_iter -= 1
         else:
             # TODO:
