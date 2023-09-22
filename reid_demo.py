@@ -8,7 +8,6 @@ from Drone import Drone
 LOG_TRACKING = True
 DRONE_ID = 114
 STARTING_HEIGHT = 0.4
-MIN_HEIGHT = 0.15
 STEP_FLIGHT_TIME = 1.5
 PALLET_OFFSET_TOPIC = "pallet_bb"
 PALLET_BLOCK_OFFSET_TOPIC = "palletBlock_bb"
@@ -30,7 +29,7 @@ def main():
     current_mode = Mode.PALLET
     blocks_passed = 0
 
-    flight_time = drone.move(drone.x, drone.y, drone.height, drone.angle, 5)
+    flight_time = drone.move(drone.x, drone.y, drone.height, drone.angle, 7)
     timeHelper.sleep(flight_time)
 
     while running:
@@ -81,43 +80,14 @@ def main():
                 blocks_passed += 1
                 # reset drone search settings
                 drone.reset_target_condition()
+                timeHelper.sleep(time + 0.2)
                 if blocks_passed >= 3:
                     print("Found all blocks returning to base...")
                     current_mode = Mode.FINISHED
                     running = False
                 else:
-                    movement = [(0.47, 0, 3), (-0.94, -0.2, 5)]
+                    movement = [(0.47, -0.1, 3), (-0.94, -0.1, 5)]
                     time = drone.move_sideways(*movement[blocks_passed-1])
-
-            # if drone.check_target_condition() and pallet_block_offsets is not None:
-                
-
-            #     while client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is None:
-            #         print("Waiting for image capture...")
-            #         pallet_block_offsets = client.get_bb(PALLET_BLOCK_OFFSET_TOPIC)
-            #         # check if object is still detected
-            #         if pallet_block_offsets is None:
-            #             # move back if not
-            #             time = drone.update_block(None)
-            #         else:
-            #             target_offset = choose_closest_bb(pallet_block_offsets)
-            #             time = drone.update_block(target_offset)
-            #         timeHelper.sleep(time)
-
-            #     # reset drone search settings
-            #     drone.reset_target_condition()
-
-            #     if blocks_passed >= 3:
-            #         print("Found all blocks returning to base...")
-            #         current_mode = Mode.FINISHED
-            #         running = False
-            #         timeHelper.sleep(1)
-            #     else:
-            #         movement = [(0.47, 0, 3), (-0.94, -0.2, 5)]
-            #         time = drone.move_sideways(*movement[blocks_passed-1])
-                
-                    
-
 
         elif current_mode == Mode.FINISHED:
             running = False
@@ -125,7 +95,12 @@ def main():
 
         if time is None:
             print("Found no pallet rtb...")
-            current_mode = Mode.FINISHED
+            current_mode = Mode.PALLET
+            drone.reset_target_condition()
+            time = drone.move(0, 0, STARTING_HEIGHT, 0, 4)
+            timeHelper.sleep(time + 0.2)
+            print("Nothing found. Press Enter to try again...")
+            swarm.input.waitUntilButtonPressed()
             time = 2
 
         timeHelper.sleep(time + 0.2)

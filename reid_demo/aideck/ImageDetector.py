@@ -24,6 +24,7 @@ class Detector(Thread):
 
         self.topicName = topic_name
         self.success_topic_name = topic_name + "_continue"
+        self.true_bb_topicName = topic_name + "_true_bb"
         self.client_name = client_name
         self.folder_name = None
         self.detection_flag = 0
@@ -72,7 +73,7 @@ class Detector(Thread):
         print("Starting detecting", self.client_name)
         current_frame = None
         while self.running:
-            # self.client.loop()
+            self.client.loop()
             ret, frame = self.device.read()
             if np.shape(frame) != ():
                 # store current frame for later use
@@ -84,8 +85,13 @@ class Detector(Thread):
                 # detect box
                 boxes, frame = utils.detect_box(frame, self.model, self.conf_threshold, self.nms_threshold)
                 self.publish(boxes)
-                boxes, frame = utils.detect_box(frame, self.model_close, self.conf_threshold, self.nms_threshold, color=(255,0,0))
-                self.publish_close(boxes)
+                if "block" in self.topicName:
+                    boxes_tiny, frame = utils.detect_box(frame, self.model_close, self.conf_threshold, self.nms_threshold, color=(255,0,0))
+                    if boxes_tiny is not None:
+                        self.publish_close(boxes_tiny)
+
+                elif "pallet" in self.topicName:
+                    self.publish_true_bb(boxes)
                     
 
                 if RECORD:
@@ -97,17 +103,24 @@ class Detector(Thread):
 
         self.device.release()
 
+    def publish_true_bb(self, bbs):
+        if bbs is not None and len(bbs) > 0:
+            print(f"Publishing to {self.true_bb_topicName} in {time.time()}")
+            bbs = [[int(el) for el in box] for box in bbs]
+            self.client.publish(self.true_bb_topicName, json.dumps(list(list(bbs))))
+
     def publish_close(self, bbs):
         if bbs is not None:
             bbs = [[int(el) for el in box] for box in bbs]
             offsets_with_center = [utils.calculate_pallet_offsets(box) for box in bbs]
             bbs_to_publish = []
             for offset_x, offset_y, area, center_x, center_y in offsets_with_center:
-                if area >= IMAGE_CAPTURE_MIN_AREA:
-                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+                # if area >= IMAGE_CAPTURE_MIN_AREA:
+                bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
                     # print("Publish to", self.topicName, str(time.time()))
                     # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
             if len(bbs_to_publish) > 0:
+                print(f"Publishing to {self.topicName} in {time.time()}")
                 self.client.publish(self.topicName, json.dumps(list(list(bbs_to_publish))))
 
     def publish(self, bbs):
@@ -116,11 +129,12 @@ class Detector(Thread):
             offsets_with_center = [utils.calculate_pallet_offsets(box) for box in bbs]
             bbs_to_publish = []
             for offset_x, offset_y, area, center_x, center_y in offsets_with_center:
-                if area < IMAGE_CAPTURE_MIN_AREA:
-                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+                # if area < IMAGE_CAPTURE_MIN_AREA:
+                bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
                     # print("Publish to", self.topicName, str(time.time()))
                     # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
             if len(bbs_to_publish) > 0:
+                print(f"Publishing to {self.topicName} in {time.time()}")
                 self.client.publish(self.topicName, json.dumps(list(list(bbs_to_publish))))
 
             # print("Publish to", self.topicName, str(time.time()))

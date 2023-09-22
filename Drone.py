@@ -38,9 +38,9 @@ class Drone():
         angle, height, dist = 0,0,0
         if not -15 <= offset_x <= 15:
             if offset_x < 0:
-                angle = -10
+                angle = -7.5
             elif offset_x > 0:
-                angle = 10
+                angle = 7.5
         
         if not -30 <= offset_y <= 30:
             if offset_y < 0:
@@ -48,11 +48,10 @@ class Drone():
             elif offset_y > 0:
                 height = 0.1
         
-        if not 3000 <= offset_z <= 4000:
-            if offset_z < 3000:
-                dist = 0.1
-            elif offset_z > 4000:
-                dist = -0.1
+        if offset_z < 3000:
+            dist = 0.4
+        else:
+            dist = 0.
 
         return angle, height, dist
 
@@ -81,9 +80,9 @@ class Drone():
                     dist_front = 0.5
                     flight_time *= 2
                 elif offset_z < 2500:
-                    dist_front = 0.25
+                    dist_front = 0.20
                 elif offset_z < 7500:
-                    dist_front = 0.1
+                    dist_front = 0.05
 
 
             elif offset_z > 14000:
@@ -93,6 +92,10 @@ class Drone():
 
     def move(self, x, y, height, angle, time):
         print("GoTo", x, y, height, angle, time)
+        self.x = x
+        self.y = y
+        self.height = height
+        self.angle = angle
         self.cf.goTo([x, y, height], math.radians(angle), time)
         return time
     
@@ -142,7 +145,7 @@ class Drone():
         if not self.update():
             return None
         # no pallet was seen in this frame move on
-        if pallet_offset is None:
+        if pallet_offset is None or not (140 < self.angle < 220):
             print("No data received, retrying...", self.max_iter)
             angle, height, dist, area = 45, 0, 0, 0
             self.max_iter -= 1
@@ -214,9 +217,11 @@ class Drone():
         if not self.update():
             return None
         if block_offset is None:
-            dist_side, height, dist_front, area = 0, 0, -0.025, 0
+            print("No bounding box found. Moving back")
+            dist_side, height, dist_front, area = 0, 0, -0.1, 0
             flight_time = 2
             self.max_iter -= 1
+            offset_x, offset_y, area = None, None, None
         else:
             # TODO:
             # - if we detect the pallet at an angle we want to move the drone such that is is orthogonal to the pallet
@@ -234,9 +239,9 @@ class Drone():
                 flight_time = STEP_FLIGHT_TIME
             else:
                 dist_side, height, dist_front, flight_time = self.adjust_drone_position_block(offset_x, offset_y, area)
-                
-            print("Distance in x: " + str(dist_side) + " Height: " + str(height) + " Distance in z: " + str(dist_front),
-                        "Offsets: x => " + str(offset_x) + " ; y => " + str(offset_y) + " ; area => " + str(area))
+            
+        print("Distance in x: " + str(dist_side) + " Height: " + str(height) + " Distance in z: " + str(dist_front),
+                    "Offsets: x => " + str(offset_x) + " ; y => " + str(offset_y) + " ; area => " + str(area))
             
         
         self.update_target_condition(dist_side, dist_front, height, area)
