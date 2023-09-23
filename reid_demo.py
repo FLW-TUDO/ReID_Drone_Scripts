@@ -78,7 +78,6 @@ def main():
                 blocks_passed += 1
                 # reset drone search settings
                 drone.reset_target_condition()
-                timeHelper.sleep(time + 0.2)
                 if blocks_passed >= 3:
                     print("Found all blocks returning to base...")
                     current_mode = Mode.FINISHED
@@ -99,12 +98,12 @@ def main():
             current_mode = Mode.PALLET
             drone.reset_target_condition()
             time = drone.move(0, 0, STARTING_HEIGHT, 0, 4)
-            timeHelper.sleep(time + 0.2)
+            timeHelper.sleep(time)
             print("Nothing found. Press Enter to try again...")
             swarm.input.waitUntilButtonPressed()
             time = 2
 
-        timeHelper.sleep(time + 0.2)
+        timeHelper.sleep(time)
 
     time = drone.move(0, 0, STARTING_HEIGHT, 0, 5)
     timeHelper.sleep(time)
