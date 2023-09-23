@@ -23,11 +23,11 @@ class MQTTClient(Thread):
         self.topic_infos[msg.topic] = data
                 
     def subscribe(self, topic):
-        self.client.subscribe(topic)
+        self.client.subscribe(topic, qos=2)
 
     def publish(self, message):
         print("Published", message, "on", self.publish_topic)
-        self.client.publish(self.publish_topic, json.dumps(message))
+        self.client.publish(self.publish_topic, json.dumps(message), qos=2)
 
     def run(self):
         self.client.loop_forever()
