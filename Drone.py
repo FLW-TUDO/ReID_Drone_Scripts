@@ -7,7 +7,7 @@ STEP_FLIGHT_TIME = 1.5
 MIN_HEIGHT = 0.15
 IMAGE_CAPTURE_MIN_AREA = 11000
 LOG_TRACKING = True
-AREA_MAX_DIFF = 0.8
+AREA_MAX_DIFF = 0.5
 
 
 class Drone():
@@ -77,12 +77,13 @@ class Drone():
             if offset_z < IMAGE_CAPTURE_MIN_AREA:
                 dist_front = 0.05
                 if offset_z < 1000:
-                    dist_front = 0.5
-                    flight_time *= 2
+                    dist_front = 0.3
+                    flight_time *= 1.5
                 elif offset_z < 2500:
-                    dist_front = 0.20
+                    dist_front = 0.10
                 elif offset_z < 7500:
-                    dist_front = 0.05
+                    dist_front = 0.025
+                    flight_time /= 2
 
 
             elif offset_z > 14000:
@@ -207,7 +208,7 @@ class Drone():
 
         # log everything
         if self.logger is not None:
-            self.logger .log_drone_values(self.x, self.y, self.height, self.angle, flight_time)
+            self.logger.log_drone_values(self.x, self.y, self.height, self.angle, flight_time)
         
         # move to position absolute and angle absolute
         self.cf.goTo([self.x, self.y, self.height], math.radians(self.angle), flight_time)
@@ -234,7 +235,7 @@ class Drone():
             offset_x, offset_y, area, _, _ = block_offset
 
             if self.check_area_size(area):
-                print("This bounding box is at least 20\% smaller than the previous one...")
+                print("This bounding box is at least " + str(AREA_MAX_DIFF*100) + "\% smaller than the previous one...")
                 dist_side, height, dist_front = 0, 0, -0.01
                 flight_time = STEP_FLIGHT_TIME
             else:
