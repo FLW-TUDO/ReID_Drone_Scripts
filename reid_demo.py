@@ -73,8 +73,6 @@ def main():
             else:
                 target_offset = choose_closest_bb(pallet_block_offsets)
             
-            time = drone.update_block(target_offset)
-
             if client.get_bb(PALLET_BLOCK_CONTINUE_TOPIC) is not None:
                 print("Found block", str(blocks_passed), "moving to next...")
                 blocks_passed += 1
@@ -88,6 +86,9 @@ def main():
                 else:
                     movement = [(0.47, -0.1, 3), (-0.94, -0.1, 5)]
                     time = drone.move_sideways(*movement[blocks_passed-1])
+            else:
+                time = drone.update_block(target_offset)
+
 
         elif current_mode == Mode.FINISHED:
             running = False
