@@ -5,7 +5,7 @@ import json
 from threading import Thread
 import os
 
-import paho.mqtt.client as mqtt_client
+from aideck.mqtt_client import MQTTClient
 import time
 
 MQTT_BROKER = "localhost"
@@ -36,10 +36,7 @@ class Detector(Thread):
             if not os.path.exists(os.path.join("recordings", self.recording_folder_name)):
                 os.mkdir(os.path.join("recordings", self.recording_folder_name))
 
-        self.client = mqtt_client.Client(client_name)
-        self.client.connect(MQTT_BROKER, PORT)
-        # self.client.on_message = self.save_current_image
-        # self.client.subscribe("image_detection")
+        self.client = MQTTClient(MQTT_BROKER, PORT, client_name, [])
 
         self.device = cv2.VideoCapture(video_device)
         self.conf_threshold = DET_THRESHOLD
@@ -53,9 +50,12 @@ class Detector(Thread):
         self.model = cv2.dnn_DetectionModel(net)
         self.model.setInputParams(size=(factor_model*128, factor_model*128), scale=1/255, swapRB=True, crop=False)
 
-        factor_model=2
-        self.model_close = cv2.dnn_DetectionModel(net)
-        self.model_close.setInputParams(size=(factor_model*128, factor_model*128), scale=1/255, swapRB=True, crop=False)
+        if "block" in self.topicName:
+            factor_model=2
+            self.model_close = cv2.dnn_DetectionModel(net)
+            self.model_close.setInputParams(size=(factor_model*128, factor_model*128), scale=1/255, swapRB=True, crop=False)
+        else:
+            self.model_close = None
 
         # self.model.setInputParams(size=(416, 416), scale=1/255, swapRB=True, crop=False)
 
@@ -73,7 +73,7 @@ class Detector(Thread):
         print("Starting detecting", self.client_name)
         current_frame = None
         while self.running:
-            self.client.loop()
+            start_time = time.time()
             ret, frame = self.device.read()
             if np.shape(frame) != ():
                 # store current frame for later use
@@ -93,9 +93,6 @@ class Detector(Thread):
                 elif "pallet" in self.topicName:
                     self.publish_true_bb(boxes)
                     
-
-                if RECORD:
-                    cv2.imwrite(os.path.join("recordings", self.recording_folder_name, f"{time.time()}.jpg"), frame)
                 cv2.imshow("Frame " + str(self.topicName), frame)
             k=cv2.waitKey(1)
             if k == ord('q'):
@@ -105,9 +102,9 @@ class Detector(Thread):
 
     def publish_true_bb(self, bbs):
         if bbs is not None and len(bbs) > 0:
-            print(f"Publishing to {self.true_bb_topicName} in {time.time()}")
+            # print(f"Publishing to {self.true_bb_topicName} in {time.time()}")
             bbs = [[int(el) for el in box] for box in bbs]
-            self.client.publish(self.true_bb_topicName, json.dumps(list(list(bbs))))
+            self.client.publish(self.true_bb_topicName, list(list(bbs)), qos=2)
 
     def publish_close(self, bbs):
         if bbs is not None:
@@ -120,8 +117,8 @@ class Detector(Thread):
                     # print("Publish to", self.topicName, str(time.time()))
                     # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
             if len(bbs_to_publish) > 0:
-                print(f"Publishing to {self.topicName} in {time.time()}")
-                self.client.publish(self.topicName, json.dumps(list(list(bbs_to_publish))))
+                # print(f"Publishing to {self.topicName} in {time.time()}")
+                self.client.publish(self.topicName, list(list(bbs_to_publish)), qos=2)
 
     def publish(self, bbs):
         if bbs is not None:
@@ -131,23 +128,9 @@ class Detector(Thread):
             for offset_x, offset_y, area, center_x, center_y in offsets_with_center:
                 # if area < IMAGE_CAPTURE_MIN_AREA:
                 bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
-                    # print("Publish to", self.topicName, str(time.time()))
-                    # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
             if len(bbs_to_publish) > 0:
-                print(f"Publishing to {self.topicName} in {time.time()}")
-                self.client.publish(self.topicName, json.dumps(list(list(bbs_to_publish))))
-
-            # print("Publish to", self.topicName, str(time.time()))
-            # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
-            # self.client.publish(self.topicName, json.dumps(list(list(offsets_with_center))))
-            # for i, (_, _, area, _, _) in enumerate(offsets_with_center):
-            #     if area > IMAGE_CAPTURE_MIN_AREA and time.time() - self.cooldown_timer > IMAGE_CAPTURE_SLEEP:
-            #         self.save_current_image(current_frame, bbs[i])
-            #         # self.client.publish(self.success_topic_name, json.dumps("continue"))
-            #         self.cooldown_timer = time.time()
-
-            # target_bb = utils.choose_closest_bb(boxes)
-            # frame = utils.draw_detection_marker(frame, target_bb, f"{self.detection_count}")
+                # print(f"Publishing to {self.topicName} in {time.time()}")
+                self.client.publish(self.topicName, list(list(bbs_to_publish)), qos=2)
 
 
     def save_current_image(self, img, bb):
