@@ -109,11 +109,11 @@ class Connector(threading.Thread):
                 # if k == ord('b'):
                 #     _,self.factors = utils.colorBalance(color_img)
 
-                cv2.imshow('Color', utils.colorCorrectBayer(color_img,self.factors))
+                # cv2.imshow('Color', utils.colorCorrectBayer(color_img,self.factors))
                 
-                k=cv2.waitKey(1)
-                if k == ord('q'):
-                    self.running = False
+                # k=cv2.waitKey(1)
+                # if k == ord('q'):
+                #     self.running = False
                 
                 if RECORD:
                     cv2.imwrite(os.path.join("recordings", self.recording_folder_name, f"{time.time()}.jpg"), utils.colorCorrectBayer(color_img,self.factors))
