@@ -1,6 +1,6 @@
 import subprocess
 
-cfs = [(114, 85), (99, 94)]
+cfs = [(114, 85), (99, 94), (115, 88)]
 
 
 batteryVoltageWarning = 3.8  # V
