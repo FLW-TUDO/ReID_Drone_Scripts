@@ -4,7 +4,7 @@ import time
 from simple_pid import PID
 
 STEP_FLIGHT_TIME = 1.5
-MIN_HEIGHT = 0.15
+MIN_HEIGHT = 0.2
 IMAGE_CAPTURE_MIN_AREA = 11000
 LOG_TRACKING = True
 AREA_MAX_DIFF = 0.5
@@ -38,9 +38,9 @@ class Drone():
         angle, height, dist = 0,0,0
         if not -15 <= offset_x <= 15:
             if offset_x < 0:
-                angle = -7.5
+                angle = -1.0
             elif offset_x > 0:
-                angle = 7.5
+                angle = 1.0
         
         if not -30 <= offset_y <= 30:
             if offset_y < 0:
@@ -63,9 +63,13 @@ class Drone():
         :param offset_y: Offset between center and target y coordinates
         :param offset_z: Area of the target detection rectangle on the frame
         """
-        dist_side, height, dist_front, flight_time = 0,0,0, STEP_FLIGHT_TIME
+        dist_side, height, dist_front, flight_time = 0, 0, 0, STEP_FLIGHT_TIME
         if not -8 <= offset_x <= 8:
-            dist_side = round(-1 * self.block_pid(offset_x), 2)
+            # dist_side = round(-1 * self.block_pid(offset_x), 2)
+            if offset_x < 0:
+                dist_side = -0.01
+            elif offset_x > 0:
+                dist_side = 0.01
         
         if not -30 <= offset_y <= 30:
             if offset_y < 0:
@@ -91,16 +95,16 @@ class Drone():
 
         return dist_side, height, dist_front, flight_time
 
-    def move(self, x, y, height, angle, time):
-        print("GoTo", x, y, height, angle, time)
+    def move(self, x, y, height, angle, flight_time):
+        print("GoTo", x, y, height, angle, flight_time)
         self.x = x
         self.y = y
         self.height = height
         self.angle = angle
-        self.cf.goTo([x, y, height], math.radians(angle), time)
-        return time
+        self.cf.goTo([x, y, height], math.radians(angle), flight_time)
+        return flight_time
     
-    def move_sideways(self, dist_x, dist_y, time):
+    def move_sideways(self, dist_x, dist_y, flight_time):
         # move closer/further to block
         self.x += dist_y * math.cos(math.radians(self.angle))
         self.y += dist_y * math.sin(math.radians(self.angle))
@@ -115,11 +119,11 @@ class Drone():
 
         # log everything
         if self.logger is not None:
-            self.logger .log_drone_values(self.x, self.y, self.height, self.angle, time)
+            self.logger .log_drone_values(self.x, self.y, self.height, self.angle, flight_time)
         
         # move to position absolute and angle absolute
-        self.cf.goTo([self.x, self.y, self.height], math.radians(self.angle), time)
-        return time
+        self.cf.goTo([self.x, self.y, self.height], math.radians(self.angle), flight_time)
+        return flight_time
 
     def reset_target_condition(self, max_iter=9):
         self.max_iter = max_iter
@@ -184,7 +188,7 @@ class Drone():
             return None
         if num_pallet_blocks < 3:
             search_area = [2, 1, 3, -2, -1]
-            angle = 12.25 * search_area[self.max_iter % len(search_area)]
+            angle = 0.0 * search_area[self.max_iter % len(search_area)]
             height = 0
             dist = 0 if self.max_iter > 4 else -0.2
             self.max_iter -= 1
@@ -236,12 +240,13 @@ class Drone():
 
             if self.check_area_size(area):
                 print("This bounding box is at least " + str(AREA_MAX_DIFF*100) + "\% smaller than the previous one...")
-                dist_side, height, dist_front = 0, 0, -0.01
+                dist_side, height, dist_front = 0, 0, -0.02
                 flight_time = STEP_FLIGHT_TIME
             else:
                 dist_side, height, dist_front, flight_time = self.adjust_drone_position_block(offset_x, offset_y, area)
             
         print("Distance in x: " + str(dist_side) + " Height: " + str(height) + " Distance in z: " + str(dist_front),
+                    "Time: " + str(flight_time),
                     "Offsets: x => " + str(offset_x) + " ; y => " + str(offset_y) + " ; area => " + str(area))
             
         
