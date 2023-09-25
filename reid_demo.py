@@ -41,7 +41,7 @@ def main():
             # choose best bb (Problem: Alternating choices)
             target_offset = choose_best_bb(pallet_offsets)
             # drone updates position, angle => flighs to position
-            time = drone.update_pallet(target_offset)
+            flight_time = drone.update_pallet(target_offset)
             
             # desired distance, height, and angle is reached
             if drone.check_target_condition():
@@ -56,7 +56,7 @@ def main():
             # calculate number of found pallet blocks else None
             num_pallet_blocks = len(pallet_block_offsets) if pallet_block_offsets is not None else None
             # drone updates position, angle => flighs to position
-            time = drone.update_block_search(num_pallet_blocks)
+            flight_time = drone.update_block_search(num_pallet_blocks)
 
             if drone.check_target_condition():
                 print("Found all pallet blocks. Continueing to next stage...")
@@ -83,30 +83,30 @@ def main():
                     current_mode = Mode.FINISHED
                     running = False
                 else:
-                    movement = [(0.47, -0.1, 3), (-0.94, -0.1, 5)]
-                    time = drone.move_sideways(*movement[blocks_passed-1])
+                    movement = [(0.47, -0.1, 3), (-1.00, -0.1, 5)]
+                    flight_time = drone.move_sideways(*movement[blocks_passed-1])
             else:
-                time = drone.update_block(target_offset)
+                flight_time = drone.update_block(target_offset)
 
 
         elif current_mode == Mode.FINISHED:
             running = False
 
 
-        if time is None:
+        if flight_time is None:
             print("Found no pallet rtb...")
             current_mode = Mode.PALLET
             drone.reset_target_condition()
-            time = drone.move(0, 0, STARTING_HEIGHT, 0, 4)
-            timeHelper.sleep(time)
+            flight_time = drone.move(0, 0, STARTING_HEIGHT, 0, 4)
+            timeHelper.sleep(flight_time)
             print("Nothing found. Press Enter to try again...")
             swarm.input.waitUntilButtonPressed()
-            time = 2
+            flight_time = 2
 
-        timeHelper.sleep(time)
+        timeHelper.sleep(flight_time)
 
-    time = drone.move(0, 0, STARTING_HEIGHT, 0, 5)
-    timeHelper.sleep(time)
+    flight_time = drone.move(0, 0, STARTING_HEIGHT, 0, 5)
+    timeHelper.sleep(flight_time)
     allcfs.land(targetHeight=0.05, duration=3.0)
     timeHelper.sleep(4)
 
