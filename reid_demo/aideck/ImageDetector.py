@@ -50,7 +50,7 @@ class Detector(Thread):
         self.model = cv2.dnn_DetectionModel(net)
         self.model.setInputParams(size=(factor_model*128, factor_model*128), scale=1/255, swapRB=True, crop=False)
 
-        if "block" in self.topicName:
+        if "Block" in self.topicName:
             factor_model=2
             self.model_close = cv2.dnn_DetectionModel(net)
             self.model_close.setInputParams(size=(factor_model*128, factor_model*128), scale=1/255, swapRB=True, crop=False)
@@ -84,13 +84,12 @@ class Detector(Thread):
                 frame = utils.draw_crosshair(frame, (0,0,frame.shape[1], frame.shape[0]), length=20)
                 # detect box
                 boxes, frame = utils.detect_box(frame, self.model, self.conf_threshold, self.nms_threshold)
-                self.publish(boxes)
-                if "block" in self.topicName:
+                if "Block" in self.topicName:
                     boxes_tiny, frame = utils.detect_box(frame, self.model_close, self.conf_threshold, self.nms_threshold, color=(255,0,0))
-                    if boxes_tiny is not None:
-                        self.publish_close(boxes_tiny)
+                    self.publish_both(boxes, boxes_tiny)       
 
                 elif "pallet" in self.topicName:
+                    self.publish(boxes)
                     self.publish_true_bb(boxes)
                     
                 cv2.imshow("Frame " + str(self.topicName), frame)
@@ -106,14 +105,36 @@ class Detector(Thread):
             bbs = [[int(el) for el in box] for box in bbs]
             self.client.publish(self.true_bb_topicName, list(list(bbs)), qos=2)
 
+    def publish_both(self, bbs_far, bbs_close):
+        offsets_with_center_far, offsets_with_center_close = None, None
+        if bbs_far is not None:
+            bbs_far = [[int(el) for el in box] for box in bbs_far]
+            offsets_with_center_far = [utils.calculate_pallet_offsets(box) for box in bbs_far]
+        if bbs_close is not None:
+            bbs_close = [[int(el) for el in box] for box in bbs_close]
+            offsets_with_center_close = [utils.calculate_pallet_offsets(box) for box in bbs_close]
+
+        bbs_to_publish = []
+        if offsets_with_center_far is not None:
+            for offset_x, offset_y, area, center_x, center_y in offsets_with_center_far:
+                if area < 1000:
+                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+        if offsets_with_center_close is not None:
+            for offset_x, offset_y, area, center_x, center_y in offsets_with_center_close:
+                if area >= 1000:
+                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+
+        if len(bbs_to_publish) > 0:
+            self.client.publish(self.topicName, list(list(bbs_to_publish)), qos=2)
+
     def publish_close(self, bbs):
         if bbs is not None:
             bbs = [[int(el) for el in box] for box in bbs]
             offsets_with_center = [utils.calculate_pallet_offsets(box) for box in bbs]
             bbs_to_publish = []
             for offset_x, offset_y, area, center_x, center_y in offsets_with_center:
-                # if area >= IMAGE_CAPTURE_MIN_AREA:
-                bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+                if area >= 1000:
+                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
                     # print("Publish to", self.topicName, str(time.time()))
                     # print(json.dumps(list(list([[int(el) for el in box] for box in boxes]))))
             if len(bbs_to_publish) > 0:
@@ -126,8 +147,8 @@ class Detector(Thread):
             offsets_with_center = [utils.calculate_pallet_offsets(box) for box in bbs]
             bbs_to_publish = []
             for offset_x, offset_y, area, center_x, center_y in offsets_with_center:
-                # if area < IMAGE_CAPTURE_MIN_AREA:
-                bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
+                if area < 1000:
+                    bbs_to_publish.append([offset_x, offset_y, area, center_x, center_y])
             if len(bbs_to_publish) > 0:
                 # print(f"Publishing to {self.topicName} in {time.time()}")
                 self.client.publish(self.topicName, list(list(bbs_to_publish)), qos=2)
