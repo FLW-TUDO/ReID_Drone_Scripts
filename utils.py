@@ -34,6 +34,21 @@ class LOGGER():
     def log_drone_values(self, pos_x, pos_y, height, angle, time=-1):
         self.writer.writerow([pos_x, pos_y, height, angle, time])
 
+# def filter_pallet_bbs(pallet_offsets):
+#     if pallet_offsets is None:
+#         return None
+    
+#     y_comp = [area for _, _, _, _, center_y in pallet_offsets]
+#     center_
+
+#     bbs = []
+#     for offset_x, offset_y, area, center_x, center_y in pallet_offsets:
+#         if area < 3*min_area:
+#             bbs.append((offset_x, offset_y, area, center_x, center_y))
+
+#     return bbs
+
+
 def choose_best_bb(pallet_offsets):
     if pallet_offsets is None:
         return None
