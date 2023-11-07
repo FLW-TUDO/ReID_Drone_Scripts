@@ -7,7 +7,7 @@ STEP_FLIGHT_TIME = 1.5
 MIN_HEIGHT = 0.2
 IMAGE_CAPTURE_MIN_AREA = 11000
 LOG_TRACKING = True
-AREA_MAX_DIFF = 0.5
+AREA_MAX_DIFF = 0.8
 
 
 class Drone():
@@ -83,15 +83,20 @@ class Drone():
                 if offset_z < 1000:
                     dist_front = 0.3
                     flight_time *= 1.5
-                elif offset_z < 2500:
-                    dist_front = 0.10
-                elif offset_z < 7500:
+                elif offset_z < 3000:
+                    dist_front = 0.05
+                elif offset_z < 6000:
                     dist_front = 0.025
                     flight_time /= 2
-
+                elif offset_z < 9000:
+                    dist_front = 0.01
+                    flight_time /= 3
+                elif offset_z < 12000:
+                    dist_front = 0.005
+                    flight_time /= 3
 
             elif offset_z > 14000:
-                dist_front = -0.025
+                dist_front = -0.05
 
         return dist_side, height, dist_front, flight_time
 
@@ -134,11 +139,11 @@ class Drone():
         return self.found_target
 
     def check_area_size(self, area):
-        if self.last_area is None:
+        if self.last_area is None or self.last_area == 0:
             self.last_area = area
             return False
         else:
-            diff = (area - self.last_area) / self.last_area + 1
+            diff = float(area) / float(self.last_area)
             self.last_area = area
             return diff < AREA_MAX_DIFF
 
@@ -151,7 +156,7 @@ class Drone():
             return None
         # no pallet was seen in this frame move on
         if pallet_offset is None or not (140 < self.angle < 220):
-            print("No data received, retrying...", self.max_iter)
+            print("No data received, retrying...", self.max_iter, "    ", self.angle)
             angle, height, dist, area = 45, 0, 0, 0
             self.max_iter -= 1
         else:
