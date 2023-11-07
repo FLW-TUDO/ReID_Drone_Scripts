@@ -66,6 +66,7 @@ def main():
 
         elif current_mode == Mode.BLOCK:
             pallet_block_offsets = client.get_bb(PALLET_BLOCK_OFFSET_TOPIC)
+            # pallet_block_offsets = filter_pallet_bbs(pallet_block_offsets)
 
             target_offset = None
             if pallet_block_offsets is not None and len(pallet_block_offsets) >= 3:
