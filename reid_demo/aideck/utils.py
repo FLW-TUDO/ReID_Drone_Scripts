@@ -105,7 +105,7 @@ def detect_box(resized, model, conf, nms, color=(0, 225, 0)):
     
 def draw_filled_rect(img_original, box, label, rect_color=(0, 225, 0), text_color=[10, 220, 10], alpha=0.05):
     img_rect_filled = img_original.copy()
-    cv2.rectangle(img_rect_filled, box , color=rect_color, thickness=-1)
+    # cv2.rectangle(img_rect_filled, box , color=rect_color, thickness=-1)
     img_processed=cv2.addWeighted(img_rect_filled, alpha, img_original, 1 - alpha, 0)
     img_processed=cv2.rectangle(img_processed, box , color=rect_color, thickness=3)
     cv2.putText(img_processed, label + "%", (int(box[0] + box[2]),int(box[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.7, text_color, 3)
