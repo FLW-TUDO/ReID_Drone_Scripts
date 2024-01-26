@@ -85,8 +85,9 @@ class Detector(Thread):
                 # detect box
                 boxes, frame = utils.detect_box(frame, self.model, self.conf_threshold, self.nms_threshold)
                 if "Block" in self.topicName:
-                    # boxes_tiny, frame = utils.detect_box(frame, self.model_close, self.conf_threshold, self.nms_threshold, color=(255,0,0))
-                    self.publish_both(boxes, None)       
+                    boxes_tiny, frame = utils.detect_box(frame, self.model_close, self.conf_threshold, self.nms_threshold, color=(255,0,0))
+                    boxes = self.merge_bounding_boxes(boxes, boxes_tiny)
+                    self.publish_both(boxes, None)
 
                 elif "pallet" in self.topicName:
                     self.publish(boxes)
@@ -99,11 +100,37 @@ class Detector(Thread):
 
         self.device.release()
 
+    def merge_bounding_boxes(self, bbs, bbs_tiny):
+        if bbs is None:
+            return bbs_tiny
+        if bbs_tiny is None:
+            return bbs
+        merges_bbs = []
+        # x, y, w, h, score
+        for bb in bbs: # all bounding boxes from the 4 model
+            bb_x, bb_y, bb_w, bb_h, _ = bb
+            area_bb = bb_w * bb_h
+            best_bb = bb
+            for bb_tiny in bbs_tiny: # all bounding boxes from the 2 model
+                bbt_x, bbt_y, bbt_w, bbt_h, _ = bb_tiny
+                # calculate intersection of both bounding boxes
+                x1 = max(bb_x, bbt_x)
+                y1 = max(bb_y, bbt_y)
+                x2 = max(bb_x+bb_w, bbt_x+bbt_w)
+                y2 = max(bb_y+bb_h, bbt_y+bbt_h)
+                if x1 < x2 and y1 < y2:
+                    area_bb_tiny = bbt_w * bbt_h
+                    if area_bb < area_bb_tiny : # better bounding box has been found
+                        best_bb = bb_tiny
+            merges_bbs.append(best_bb)
+            
+        return merges_bbs
+
     def publish_true_bb(self, bbs):
         if bbs is not None and len(bbs) > 0:
             # print(f"Publishing to {self.true_bb_topicName} in {time.time()}")
             bbs = [[int(el) for el in box] for box in bbs]
-            self.client.publish(self.true_bb_topicName, list(list(bbs)), qos=2)
+            self.client.publish(self.true_bb_topicName, {"type": "bb", "content": list(list(bbs))}, qos=2)
 
     def publish_both(self, bbs_far, bbs_close):
         offsets_with_center_far, offsets_with_center_close = None, None
