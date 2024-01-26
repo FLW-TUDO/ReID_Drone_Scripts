@@ -3,7 +3,7 @@ from pycrazyswarm import Crazyswarm
 from MQTTClient import MQTTClient
 from utils import choose_best_bb, choose_middle_bb, choose_closest_bb,  Mode
 from Drone import Drone
-
+import time
 
 LOG_TRACKING = True
 DRONE_ID = 114
@@ -29,8 +29,10 @@ def main():
     current_mode = Mode.PALLET
     blocks_passed = 0
 
-    flight_time = drone.move(drone.x, drone.y, drone.height, drone.angle, 7)
+    flight_time = drone.move(drone.x, drone.y, drone.height, drone.angle, 3)
     timeHelper.sleep(flight_time)
+
+    flight_start_time = time.time()
 
     while running:
 
@@ -83,6 +85,12 @@ def main():
                     print("Found all blocks returning to base...")
                     current_mode = Mode.FINISHED
                     running = False
+                    flight_duration = time.time() - flight_start_time
+                    content = {
+                        "type": "flight_time",
+                        "content": flight_duration
+                    }
+                    client.publish_on_topic("flight_time", content, qos=2)
                 else:
                     movement = [(0.47, -0.1, 3), (-1.00, -0.1, 5)]
                     flight_time = drone.move_sideways(*movement[blocks_passed-1])
@@ -102,6 +110,7 @@ def main():
             timeHelper.sleep(flight_time)
             print("Nothing found. Press Enter to try again...")
             swarm.input.waitUntilButtonPressed()
+            flight_start_time = time.time()
             flight_time = 2
 
         timeHelper.sleep(flight_time)

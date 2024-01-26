@@ -28,6 +28,10 @@ class MQTTClient(Thread):
         print("Published", message, "on", self.publish_topic)
         self.client.publish(self.publish_topic, json.dumps(message), qos=2)
 
+    def publish_on_topic(self, topic, message, qos=2):
+        print("Published", message, "on", topic)
+        self.client.publish(topic, json.dumps(message), qos=qos)
+
     def run(self):
         self.client.loop_forever()
 
