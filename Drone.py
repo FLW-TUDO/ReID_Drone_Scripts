@@ -53,7 +53,7 @@ class Drone():
         else:
             dist = 0.
 
-        return angle, height, dist
+        return 0, height, dist
 
     def adjust_drone_position_block(self, offset_x, offset_y, offset_z):
         """
@@ -77,25 +77,25 @@ class Drone():
             elif offset_y > 0:
                 height = 0.1
         
-        if not IMAGE_CAPTURE_MIN_AREA <= offset_z <= 14000:
+        if not IMAGE_CAPTURE_MIN_AREA <= offset_z <= 7000: # 14000:
             if offset_z < IMAGE_CAPTURE_MIN_AREA:
                 dist_front = 0.05
-                if offset_z < 1000:
-                    dist_front = 0.3
+                if offset_z < 500: # 1000:
+                    dist_front = 0.1 # 0.3
                     flight_time *= 1.5
-                elif offset_z < 3000:
-                    dist_front = 0.05
-                elif offset_z < 6000:
-                    dist_front = 0.025
+                elif offset_z < 1500: # 3000:
+                    dist_front = 0.025 # 0.05
+                elif offset_z < 3000: # 6000:
+                    dist_front = 0.015 # 0.025
                     flight_time /= 2
-                elif offset_z < 9000:
-                    dist_front = 0.01
+                elif offset_z < 4500: # 9000:
+                    dist_front = 0.005 # 0.01
                     flight_time /= 3
-                elif offset_z < 12000:
-                    dist_front = 0.005
+                elif offset_z < 6000: # 12000:
+                    dist_front = 0.001 # 0.005
                     flight_time /= 3
 
-            elif offset_z > 14000:
+            elif offset_z > 7000: # 14000:
                 dist_front = -0.05
 
         return dist_side, height, dist_front, flight_time
@@ -243,12 +243,12 @@ class Drone():
 
             offset_x, offset_y, area, _, _ = block_offset
 
-            if self.check_area_size(area):
-                print("This bounding box is at least " + str(AREA_MAX_DIFF*100) + "\% smaller than the previous one...")
-                dist_side, height, dist_front = 0, 0, -0.02
-                flight_time = STEP_FLIGHT_TIME
-            else:
-                dist_side, height, dist_front, flight_time = self.adjust_drone_position_block(offset_x, offset_y, area)
+            # if self.check_area_size(area):
+            #     print("This bounding box is at least " + str(AREA_MAX_DIFF*100) + "\% smaller than the previous one...")
+            #     dist_side, height, dist_front = 0, 0, -0.02
+            #     flight_time = STEP_FLIGHT_TIME
+            # else:
+            dist_side, height, dist_front, flight_time = self.adjust_drone_position_block(offset_x, offset_y, area)
             
         print("Distance in x: " + str(dist_side) + " Height: " + str(height) + " Distance in z: " + str(dist_front),
                     "Time: " + str(flight_time),
