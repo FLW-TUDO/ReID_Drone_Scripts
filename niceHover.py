@@ -2,8 +2,14 @@
 
 import numpy as np
 from pycrazyswarm import *
+import time
 
 Z = 0.3
+
+def print_position(cfs):
+    for cf in allcfs.crazyflies:
+        pos = cf.position()
+        print(pos)
 
 if __name__ == "__main__":
     swarm = Crazyswarm()
@@ -11,12 +17,19 @@ if __name__ == "__main__":
     allcfs = swarm.allcfs
 
     #allcfs.takeoff(targetHeight=Z, duration=3.0+Z)
-    allcfs.takeoff2(targetHeight=Z, yaw=0, useCurrentYaw=True, duration=1.0+Z)
-    timeHelper.sleep(1.5+Z)
-    #for cf in allcfs.crazyflies:
-        #pos = np.array(cf.initialPosition) + np.array([0, 0, Z])
-    allcfs.goTo([-4.2,0,0], 0, 6.0)
-    timeHelper.sleep(6.0+Z)
+    allcfs.takeoff2(targetHeight=Z, yaw=0, useCurrentYaw=True, duration=3.0+Z)
+    timeHelper.sleep(3+Z)
+
+    for cf in allcfs.crazyflies:
+        cf.goTo([0.5, 0.5, 0.5], 0, 3)
+
+    start_time = time.time()
+
+    while time.time() < start_time + 3:
+        print_position(allcfs.crazyflies)
+        timeHelper.sleep(0.1)
+
+    
 
     print("press button to continue...")
     swarm.input.waitUntilButtonPressed()
