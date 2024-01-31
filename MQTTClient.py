@@ -1,6 +1,7 @@
 from threading import Thread
 import paho.mqtt.client as mqtt
 import json
+from time import time
 
 class MQTTClient(Thread):
     def __init__(self, ip, port, topics = [], publish_topic="image_detection"):
@@ -13,12 +14,20 @@ class MQTTClient(Thread):
 
         self.topic_infos = {}
         self.publish_topic = publish_topic
+        self.message_ready = {key: False for key in topics}
 
         self.start()
 
     def on_message(self, client, userdata, msg):
         data = json.loads(msg.payload.decode())
         self.topic_infos[msg.topic] = data
+        self.message_ready[msg.topic] = True
+
+    def is_message_ready(self, topic):
+        if topic not in self.message_ready:
+            self.message_ready[topic] = False
+            return False
+        return self.message_ready[topic]
                 
     def subscribe(self, a, b, c, d):
         for topic in self.topics:
@@ -40,6 +49,7 @@ class MQTTClient(Thread):
             return None
         res = self.topic_infos[topic]
         self.topic_infos[topic] = None
+        self.message_ready[topic] = False
         return res
 
     def close(self):
