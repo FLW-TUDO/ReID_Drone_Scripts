@@ -30,6 +30,7 @@ class Detector(Thread):
         self.detection_flag = 0
         self.detection_count = 0
         self.cooldown_timer = 0
+        self.save_counter = 0
 
         if RECORD:
             self.recording_folder_name = f"recording_{topic_name}_{int(time.time())}"
@@ -97,6 +98,10 @@ class Detector(Thread):
             k=cv2.waitKey(1)
             if k == ord('q'):
                 break
+
+            if RECORD:
+                cv2.imwrite(os.path.join("recordings", self.recording_folder_name, f"{self.save_counter}.jpg"), frame)
+                self.save_counter += 1
 
         self.device.release()
 
