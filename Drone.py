@@ -4,8 +4,9 @@ import time
 from simple_pid import PID
 
 STEP_FLIGHT_TIME = 1.5
-MIN_HEIGHT = 0.15
+MIN_HEIGHT = 0.10
 IMAGE_CAPTURE_MIN_AREA = 14000
+PALLET_DET_MIN_AREA = 7000
 LOG_TRACKING = True
 AREA_MAX_DIFF = 0.8
 
@@ -21,7 +22,7 @@ class Drone():
 
         self.block_pid_x = PID(3, 0.05, 0.01, setpoint=0)
         self.block_pid_y = PID(3, 0.05, 0.01, setpoint=0)
-        self.block_pid_z = PID(2, 0.05, 0.01, setpoint=IMAGE_CAPTURE_MIN_AREA)
+        self.block_pid_z = PID(1.5, 0.05, 0.01, setpoint=IMAGE_CAPTURE_MIN_AREA)
         self.logger = None
         if LOG_TRACKING:
             self.logger = utils.LOGGER(str(int(time.time())) + "_" + str(cf))
@@ -58,7 +59,7 @@ class Drone():
             elif offset_y > 0:
                 height = 0.1
         
-        if offset_z < 3000:
+        if offset_z < PALLET_DET_MIN_AREA:
             dist = 0.3
         else:
             dist = 0.0
@@ -136,7 +137,7 @@ class Drone():
         _y += dist_x * math.sin(angle)
 
         if _height < MIN_HEIGHT:
-            _height = 0.1
+            _height = MIN_HEIGHT
 
         # log everything
         if self.logger is not None:
@@ -150,6 +151,10 @@ class Drone():
         self.max_iter = max_iter
         self.found_target = False
         self.last_area = None
+
+        self.block_pid_x.reset()
+        self.block_pid_y.reset()
+        self.block_pid_z.reset()
     
     def check_target_condition(self):
         return self.found_target
@@ -172,7 +177,7 @@ class Drone():
             return None
         # no pallet was seen in this frame move on
         _angle = math.radians(DEBUG_ANGLE) # self.cf.yaw()
-        if pallet_offset is None or  not -20 < abs(math.degrees(_angle)) < 20: # not (160 < abs(math.degrees(_angle)) < 200):
+        if pallet_offset is None or not -20 < abs(math.degrees(_angle)) < 20: # not (160 < abs(math.degrees(_angle)) < 200):
             print("No data received, retrying...", self.max_iter, "    ", math.degrees(_angle), "   ")
             angle, height, dist, area = 45, 0, 0, 0
             self.max_iter -= 1
@@ -197,7 +202,7 @@ class Drone():
         flight_time = STEP_FLIGHT_TIME
 
         if _height < MIN_HEIGHT:
-            _height = 0.3
+            _height = MIN_HEIGHT
 
         # log everything
         if self.logger is not None:

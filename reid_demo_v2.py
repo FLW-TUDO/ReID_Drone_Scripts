@@ -97,7 +97,7 @@ def main():
                     }
                     client.publish_on_topic("flight_time", content, qos=2)
                 else:
-                    movement = [(0.47, -0.1, 3), (-1.05, -0.1, 5)]
+                    movement = [(0.44, -0.1, 3), (-1.05, -0.1, 5)]
                     flight_time = drone.move_sideways(*movement[blocks_passed-1])
                     last_command_time = time.time()
                     timeHelper.sleep(flight_time)
