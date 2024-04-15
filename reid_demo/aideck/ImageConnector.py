@@ -8,7 +8,7 @@ import pyvirtualcam
 
 from aideck import utils
 
-IP = '192.168.2.195'
+IP = '192.168.2.95'
 PORT = 5000
 DEVICE_NUMBERS = [0, 1, 2]
 WIDTH = 324
