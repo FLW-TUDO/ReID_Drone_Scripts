@@ -4,7 +4,7 @@ import time
 def main():
     detector_pallet = Detector(
         "aideck/models/yolov4-tiny.cfg", 
-        "aideck/models/yolov4-tiny_pallet.weights", 
+        "aideck/models/yolov4-tiny_pallet_0-20.weights", 
         "pallet_bb", 
         "Bounding Box Publisher for pallets", 
         video_device=2)
