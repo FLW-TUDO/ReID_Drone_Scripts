@@ -47,7 +47,7 @@ def main():
             pallet_offsets = client.get_bb(PALLET_OFFSET_TOPIC)
             # choose best bb (Problem: Alternating choices)
             target_offset = choose_best_bb(pallet_offsets)
-            # drone updates position, angle => flighs to position
+            # drone updates position, angle => flies to position
             flight_time = drone.update_pallet(target_offset)
             last_command_time = time.time()
             timeHelper.sleep(flight_time)
@@ -72,9 +72,11 @@ def main():
 
             # select the desired bounding box
             target_offset = None
+            
             # if pallet_block_offsets is not None and len(pallet_block_offsets) >= 3:
-            #     target_offset = choose_middle_bb(pallet_block_offsets)
+            # target_offset = choose_middle_bb(pallet_block_offsets)
             # else:
+            
             if pallet_block_offsets is not None:
                 target_offset = choose_closest_bb(pallet_block_offsets)
 

@@ -3,6 +3,23 @@ import utils
 import time
 from simple_pid import PID
 
+'''
+STEP_FLIGHT_TIME:           predefined flight time per step
+MIN_HEIGHT:                 min. (theoretical) flight heigth (high weight could decrease actual flight height)
+IMAGE_CAPTURE_MIN_AREA:     min. bounding box area (in square pixels) for image capturing of a pallet block
+PALLET_DET_MIN_AREA:        min. bounding box area (in square pixels) for a pallet to be detected
+LOG_TRACKING:               flag whether a log of the flight should be created
+AREA_MAX_DIFF:              max. acceptable difference between two detected bounding boxes, safety for wrongly detected bix/small boxes that would either trigger the drone to take a bad image or fly to close crashing
+
+----------------------------
+**Do not change conversion rates**
+PIXEL_TO_METER
+AREA_TO_METER = 10e-7
+----------------------------
+
+DEBUG_ANGLE                 KEINE AHNUNG WAS DAS MACHT?
+'''
+
 STEP_FLIGHT_TIME = 1.5
 MIN_HEIGHT = 0.10
 IMAGE_CAPTURE_MIN_AREA = 14000
@@ -52,7 +69,7 @@ class Drone():
                 angle = -1.0
             elif offset_x > 0:
                 angle = 1.0
-        
+
         if not -30 <= offset_y <= 30:
             if offset_y < 0:
                 height = -0.1
@@ -139,6 +156,9 @@ class Drone():
         if _height < MIN_HEIGHT:
             _height = MIN_HEIGHT
 
+        '''
+        self.logger .log_drone_values() --> ein Leerzeichen zu viel?
+        '''
         # log everything
         if self.logger is not None:
             self.logger .log_drone_values(_x, _y, _height, math.degrees(_angle), flight_time)
@@ -148,6 +168,9 @@ class Drone():
         return flight_time
 
     def reset_target_condition(self, max_iter=9):
+        '''
+        Sets the parameters for an approach to a new pallet block
+        '''
         self.max_iter = max_iter
         self.found_target = False
         self.last_area = None
@@ -160,6 +183,9 @@ class Drone():
         return self.found_target
 
     def check_area_size(self, area):
+        
+        ### Ungenutzt? Ein Vorkommen in drone.py auskommentiert
+
         if self.last_area is None or self.last_area == 0:
             self.last_area = area
             return False
@@ -169,17 +195,29 @@ class Drone():
             return diff < AREA_MAX_DIFF
 
     def update_target_condition(self, angle, dist, height, area):
+        '''
+        Checks if any drone parameter was subject to change. If not the target was found.
+        '''
         if angle == 0 and dist == 0 and (height == 0 or height <= MIN_HEIGHT) or area > IMAGE_CAPTURE_MIN_AREA:
             self.found_target = True
 
     def update_pallet(self, pallet_offset):
+        '''
+        Monitors progress during pallet search and moves the drone accordingly to reach preset conditions.
+        '''
+        
+        # returns none if the drone searched full 360 degrees without finding a pallet
         if not self.update():
             return None
-        # no pallet was seen in this frame move on
+        # no pallet was seen in this frame, move on
         _angle = math.radians(DEBUG_ANGLE) # self.cf.yaw()
+        # no pallet_offset = no pallet found or pallet not inside defined angle offset
         if pallet_offset is None or not -20 < abs(math.degrees(_angle)) < 20: # not (160 < abs(math.degrees(_angle)) < 200):
             print("No data received, retrying...", self.max_iter, "    ", math.degrees(_angle), "   ")
+            # changes to the current drone position values
+            # add 45 degrees to angle without changing the other params
             angle, height, dist, area = 45, 0, 0, 0
+            # subtract a "try"/iteration, 8 iterations = 360 degree search
             self.max_iter -= 1
             _angle = math.radians((8 - self.max_iter) * angle)
         else:
@@ -189,7 +227,7 @@ class Drone():
             print("Angle: " + str(angle) + " Height: " + str(height) + " Distance: " + str(dist),
                         "Offsets: x => " + str(offset_x) + " ; y => " + str(offset_y) + " ; area => " + str(area))
         
-
+        
         self.update_target_condition(angle, dist, height, area)
 
         _x, _y, _height = self.cf.position()
@@ -213,10 +251,17 @@ class Drone():
         return flight_time
 
     def update_block_search(self, num_pallet_blocks):
+        '''
+        Only used in reid_demo.py (old)
+        Monitors progress during pallet block search and moves the drone accordingly to reach preset conditions.
+        '''
         if not self.update():
             return None
+        
+        # While less then 3 pallet blocks have been found:
         if num_pallet_blocks < 3:
             search_area = [2, 1, 3, -2, -1]
+            ### müsste eigtl. immer 0 sein??? Was macht search_area?
             angle = 0.0 * search_area[self.max_iter % len(search_area)]
             height = 0
             dist = 0 if self.max_iter > 4 else -0.2
@@ -252,6 +297,9 @@ class Drone():
         return flight_time 
 
     def update_block(self, block_offset):
+        '''
+        Monitors progress during pallet block search and moves the drone accordingly to reach preset conditions.
+        '''
         if not self.update():
             return None
         if block_offset is None:
@@ -260,6 +308,8 @@ class Drone():
             flight_time = 2
             self.max_iter -= 1
             offset_x, offset_y, area = None, None, None
+        
+        # block_offset contains values:
         else:
             # TODO:
             # - if we detect the pallet at an angle we want to move the drone such that is is orthogonal to the pallet
@@ -267,7 +317,7 @@ class Drone():
             #       IDEA: 
             #           - compare the most left and most right bounding boxes
             #           - the differnence in size should give some idea of the angle
-            #           - PROBLEM: how to move the drone that it is then orthogonal based on the information
+            #       PROBLEM: how to move the drone that it is then orthogonal based on the information
 
             offset_x, offset_y, area, _, _ = block_offset
 
@@ -276,6 +326,8 @@ class Drone():
             #     dist_side, height, dist_front = 0, 0, -0.02
             #     flight_time = STEP_FLIGHT_TIME
             # else:
+
+            # Correction values calculated
             dist_side, height, dist_front, flight_time = self.adjust_drone_position_block(offset_x, offset_y, area)
             
         print("Distance in x: " + str(dist_side) + " Height: " + str(height) + " Distance in z: " + str(dist_front),
@@ -311,6 +363,10 @@ class Drone():
         return flight_time
 
     def update(self):
+        '''
+        If drone searched a full 360° around the starting point and found no pallet
+        returns False which triggers the return to base-command.
+        '''
         if self.max_iter == 0:
             print("Found no pallet rtb...")
             return False
